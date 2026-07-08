@@ -1,0 +1,42 @@
+# --- Python 빌드 및 패키지 ---
+# 가상환경
+venv/
+.venv/
+env/
+ENV/
+
+# 빌드 및 배포 결과물
+build/
+dist/
+*.egg-info/
+
+# 캐시 파일
+__pycache__/
+*.pyc
+
+# --- 테스트 및 Coverage ---
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# --- IDE 설정 (VS Code, PyCharm 등) ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- 기타 ---
+.DS_Store
+.env
+.pytest_cache/
+
+.claude/
+.playwright-mcp/
+
+RELEASING.md

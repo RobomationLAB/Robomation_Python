@@ -22,6 +22,7 @@ from typing import Literal, Union, get_args
 from robomation.core.error import _err
 from robomation.core.runner import Runner
 from robomation.core.model import Robot
+from robomation.core.utils import Utils
 
 from robomation.cheesestick_ext.csd01 import CSD01 as _CSD01
 from robomation.cheesestick_ext.csd02 import CSD02 as _CSD02
@@ -398,15 +399,15 @@ class CheeseStick(Robot):
     def _analog_to_pwm(value):
         # 0-100 analog → 0-255 PWM byte
         if value < 0: value = 0
-        if value > 100: value = 100
-        return math.floor(value * 255 / 100 + 0.5)
+        if value > 255: value = 255
+        return Utils.round(value * 100 / 255)
 
     @staticmethod
     def _pwm_to_analog(value):
         # 0-255 PWM byte → 0-100 analog
         if value < 0: value = 0
-        if value > 255: value = 255
-        return math.floor(value * 100 / 255)
+        if value > 100: value = 100
+        return Utils.round(value * 255 / 100)
 
     def _set_io_range(self, unit, src_min, src_median, src_max, dst_min, dst_median, dst_max):
         if unit not in CheeseStick._SRC_RANGE_DEVICE_IDS:

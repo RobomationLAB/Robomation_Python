@@ -22,7 +22,7 @@ from robomation.core.runner import Runner
 
 
 # ── Module-level Literal aliases (for IDE auto-complete) ─────────────────────
-_HAT010Button = Literal['A', 'B']
+_HAT010Button = Literal['a', 'b']
 _HAT010Color  = Literal['blue', 'green', 'cyan', 'red', 'magenta', 'yellow', 'white', 'orange', 'violet']
 _HAT010Shape  = Literal['rectangle', 'triangle', 'diamond', 'circle', 'x', 'like', 'dislike', 'angry',
                         'mouth_open', 'mouth_close', 'walking', 'heart', 'star', 'airplane', 'dog', 'butterfly',
@@ -163,8 +163,13 @@ class HAT010:
         Runner.dispatch(lambda: self._turn_off_one_impl(x, y), True)
 
     def _turn_off_all_impl(self):
-        self._parent.write(self._parent.HAT010_CLEAR, 1)
-        time.sleep(0.1)
+        # self._parent.write(self._parent.HAT010_CLEAR, 1)
+        # time.sleep(0.1)
+        self._parent.write(self._parent.HAT010_X, 0)
+        self._parent.write(self._parent.HAT010_Y, 0)
+        self._parent.write(self._parent.HAT010_LED, 0)
+        self._parent.write(self._parent.HAT010_DRAW, [0] * 25)
+        Runner.wait_until(self._evaluate_draw)
 
     def turn_off_all(self):
         Runner.dispatch(lambda: self._turn_off_all_impl(), True)
@@ -181,13 +186,19 @@ class HAT010:
         self._parent.write(dev, self._parent.read(dev) + value)
 
     def button_input(self, unit: _HAT010Button) -> int:
+        if not isinstance(unit, str):
+            _err(HAT010, 'button_input', 'unit', unit, 'str')
+        unit = unit.lower()
         if unit not in HAT010._VALID_BUTTONS:
             return _err(HAT010, 'button_input', 'unit', unit, HAT010._VALID_BUTTONS)
-        dev = self._parent.HAT010_BUTTON_A if unit == 'A' else self._parent.HAT010_BUTTON_B
+        dev = self._parent.HAT010_BUTTON_A if unit == 'a' else self._parent.HAT010_BUTTON_B
         return self._parent.read(dev)
 
     def button_click(self, unit: _HAT010Button) -> bool:
+        if not isinstance(unit, str):
+            _err(HAT010, 'button_click', 'unit', unit, 'str')
+        unit = unit.lower()
         if unit not in HAT010._VALID_BUTTONS:
             return _err(HAT010, 'button_click', 'unit', unit, HAT010._VALID_BUTTONS)
-        dev = self._parent.HAT010_BUTTON_A_STATE if unit == 'A' else self._parent.HAT010_BUTTON_B_STATE
+        dev = self._parent.HAT010_BUTTON_A_STATE if unit == 'a' else self._parent.HAT010_BUTTON_B_STATE
         return self._parent.e(dev)

@@ -414,6 +414,16 @@ class RaccoonBot(Robot):
         else:
             self.write(RaccoonBot.MOTOR_OFF, unit - 1, val)
 
+        mode = self.read(RaccoonBot.MODE)
+        if mode == RaccoonBot._VALID_MODES['speed']:
+            for i in range(4):
+                self.write(RaccoonBot.SPEED, i, self.read(RaccoonBot.SPEED, i))
+        elif mode == RaccoonBot._VALID_MODES['angle']:
+            self.write(RaccoonBot.ANGLE_J1, self.read(RaccoonBot.ENCODER_J1))
+            self.write(RaccoonBot.ANGLE_J2, self.read(RaccoonBot.ENCODER_J2))
+            self.write(RaccoonBot.ANGLE_J3, self.read(RaccoonBot.ENCODER_J3))
+            self.write(RaccoonBot.ANGLE_J4, self.read(RaccoonBot.ENCODER_J4))
+
     # ── Speed ─────────────────────────────────────────────────────────────────
     def set_speed_joint(self, joint: _JointId, data: Union[int, float]):
         # if not self._require_mode('set_speed_joint', 'speed'):
@@ -459,7 +469,6 @@ class RaccoonBot(Robot):
         self.write(RaccoonBot.ANGLE_MAX_SPEED, data)
 
     def _set_angle_joint_impl(self, joint, data):
-        
         self.write(RaccoonBot.MODE, RaccoonBot._VALID_MODES['angle'])
         if joint == -1:
             self.write(RaccoonBot.ANGLE_J1, data)
@@ -703,9 +712,9 @@ class RaccoonBot(Robot):
     #         return _err(RaccoonBot, 'conveyor_mode', 'mode', mode, tuple(RaccoonBot._VALID_CONVEYOR_MODES))
     #     self.write(RaccoonBot.CONVEYOR_MODE, RaccoonBot._VALID_CONVEYOR_MODES[mode])
 
-    def conveyor_speed(self, data: Union[int, float]):
+    def set_conveyor_speed(self, data: Union[int, float]):
         if not isinstance(data, (int, float)):
-            return _err(RaccoonBot, 'conveyor_speed', 'data', data, 'int | float')
+            return _err(RaccoonBot, 'set_conveyor_speed', 'data', data, 'int | float')
         if self.read(RaccoonBot.CONVEYOR_DISTANCE) != 0:
             self.write(RaccoonBot.CONVEYOR_DISTANCE, 0)
         self.write(RaccoonBot.CONVEYOR_SPEED, data)

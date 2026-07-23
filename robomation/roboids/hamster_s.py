@@ -297,10 +297,6 @@ class HamsterS(Robot):
         return value * HamsterS._VAL_TO_SPEED
 
     @staticmethod
-    def _get_speed_input(value):
-        return value / HamsterS._VAL_TO_SPEED
-
-    @staticmethod
     def _get_distance(value, unit='cm'):
         d = value * HamsterS._CM_TO_PULSE
         if unit == 'mm': d /= 10
@@ -711,7 +707,8 @@ class HamsterS(Robot):
     def wheel_speed(self, unit: _SensorSide) -> Union[int, float]:
         if unit not in HamsterS._VALID_SENSOR_SIDES:
             return _err(HamsterS, 'wheel_speed', 'unit', unit, HamsterS._VALID_SENSOR_SIDES)
-        return self._get_speed_input(self.read(HamsterS.LEFT_WHEEL if unit == 'left' else HamsterS.RIGHT_WHEEL))
+        value = self.read(HamsterS.LEFT_WHEEL if unit == 'left' else HamsterS.RIGHT_WHEEL)
+        return 0 if value == -128 else value
 
     def proximity(self, unit: _SensorSide) -> Union[int, float]:
         if unit not in HamsterS._VALID_SENSOR_SIDES:
@@ -762,6 +759,9 @@ class HamsterS(Robot):
     # ── IO ────────────────────────────────────────────────────────────────────
 
     def io_mode(self, unit: _IoUnit, option: _IoMode):
+        if not isinstance(unit, str):
+            return _err(HamsterS, 'io_mode', 'unit', unit, 'str')
+        unit = unit.lower()
         if unit not in HamsterS._VALID_IO_UNITS:
             return _err(HamsterS, 'io_mode', 'unit', unit, HamsterS._VALID_IO_UNITS)
         if option not in HamsterS._VALID_IO_MODES:
@@ -773,6 +773,9 @@ class HamsterS(Robot):
             self.write(HamsterS.IO_B_MODE, wire)
 
     def set_output(self, unit: _IoUnit, data: Union[int, float]):
+        if not isinstance(unit, str):
+            return _err(HamsterS, 'set_output', 'unit', unit, 'str')
+        unit = unit.lower()
         if unit not in HamsterS._VALID_IO_UNITS:
             return _err(HamsterS, 'set_output', 'unit', unit, HamsterS._VALID_IO_UNITS)
         if not isinstance(data, (int, float)):
@@ -783,6 +786,9 @@ class HamsterS(Robot):
             self.write(HamsterS.IO_B_OUTPUT, data)
 
     def change_output(self, unit: _IoUnit, data: Union[int, float]):
+        if not isinstance(unit, str):
+            return _err(HamsterS, 'change_output', 'unit', unit, 'str')
+        unit = unit.lower()
         if unit not in HamsterS._VALID_IO_UNITS:
             return _err(HamsterS, 'change_output', 'unit', unit, HamsterS._VALID_IO_UNITS)
         if not isinstance(data, (int, float)):
@@ -804,6 +810,9 @@ class HamsterS(Robot):
         self.write(HamsterS.SHOOTER, data)
 
     def get_input(self, unit: _IoInUnit) -> Union[int, float]:
+        if not isinstance(unit, str):
+            _err(HamsterS, 'get_input', 'unit', unit, 'str')
+        unit = unit.lower()
         if unit not in HamsterS._VALID_IO_IN_UNITS:
             return _err(HamsterS, 'get_input', 'unit', unit, HamsterS._VALID_IO_IN_UNITS)
         return self.read(HamsterS.IO_A_INPUT if unit == 'a' else HamsterS.IO_B_INPUT)

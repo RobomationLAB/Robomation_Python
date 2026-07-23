@@ -30,6 +30,7 @@ from robomation.core._internal import _log, _scope, _tts, _sound
 
 keyboard = None
 
+_Lang = Literal['en-US', 'ko-KR']
 _Color = Literal['black', 'red', 'yellow', 'green', 'cyan', 'blue', 'magenta', 'white']
 
 class Utils:
@@ -98,9 +99,9 @@ class Utils:
         _log.log(data, tag, unit)
         
     @staticmethod
-    def scope(name, min_val, max_val, color, signal):
+    def scope(signal, name, min_val, max_val, color):
         # globals()['__scope'](name, min_val, max_val, color, signal)
-        _scope.scope(name, min_val, max_val, color, signal)
+        _scope.scope(signal, name, min_val, max_val, color)
 
     @staticmethod
     def keypressed(key):
@@ -112,7 +113,7 @@ class Utils:
         return keyboard._pressed_keys.get(key, False)
 
     @staticmethod
-    def set_tts(lang, name = None):
+    def set_tts(lang: _Lang, name=None):
         # globals()['__setTTSOption'](lang, name)
         _tts.set_tts(lang, name)
 

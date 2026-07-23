@@ -20,6 +20,7 @@
 # Boston, MA  02111-1307  USA
 
 import sys
+import threading
 from timeit import default_timer as timer
 
 import serial.tools.list_ports
@@ -27,12 +28,15 @@ import serial.tools.list_ports
 BAUD_RATE = 115200
 VALID_PACKET_LENGTH = 54
 RETRY = 10
-TIMEOUT = 0.1
+TIMEOUT = 0.25
 
 State = type("Enum", (), {"CONNECTING": 1, "CONNECTED": 2, "CONNECTION_LOST": 3, "DISCONNECTED": 4, "DISPOSED": 5})
 Result = type("Enum", (), {"FOUND": 1, "NOT_CONNECTED": 2, "NOT_AVAILABLE": 3})
 
 class SerialConnector(object):
+    _claimed_ports = set()
+    _claim_lock = threading.Lock()
+
     def __init__(self, tag, connection_checker, loader=None):
         self._tag = tag
         self._connection_checker = connection_checker
@@ -44,18 +48,32 @@ class SerialConnector(object):
         self._found = False
         self._timestamp = 0
         self._connected = False
-
+    
     def open(self, port_name=None):
         if port_name:
             result = self._open_port(port_name)
             if result != Result.NOT_AVAILABLE:
                 return result
         else:
-            ports = serial.tools.list_ports.comports()
-            for port in ports:
-                result = self._open_port(port[0])
+            fallback = Result.NOT_AVAILABLE
+            for port in serial.tools.list_ports.comports():
+                name = port[0]
+                with SerialConnector._claim_lock:
+                    if name in SerialConnector._claimed_ports:
+                        continue  # 이미 다른 로봇이 점유 → 건너뜀
+                    SerialConnector._claimed_ports.add(name)  # 낙관적 선점
+                result = self._open_port(name)
+                if result == Result.FOUND:
+                    self._port_name = name
+                    return result  # 점유 확정
                 if result != Result.NOT_AVAILABLE:
                     return result
+                with SerialConnector._claim_lock:
+                    SerialConnector._claimed_ports.discard(name)  # 내 것 아님 → 해제
+                if result == Result.NOT_CONNECTED:
+                    fallback = Result.NOT_CONNECTED
+            if fallback != Result.NOT_AVAILABLE:
+                return fallback
         self._print_error("No available USB to BLE bridge")
         return Result.NOT_AVAILABLE
 
@@ -80,6 +98,9 @@ class SerialConnector(object):
         if self._serial:
             self._serial.close()
             self._serial = None
+        if self._port_name:
+            with SerialConnector._claim_lock:
+                SerialConnector._claimed_ports.discard(self._port_name)
         self._print_message("Disposed")
 
     def is_connected(self):

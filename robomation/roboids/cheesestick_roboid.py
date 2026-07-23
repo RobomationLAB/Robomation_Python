@@ -924,7 +924,7 @@ class CheeseStickRoboid(Roboid):
             elif src_median == src_max: return dst_max
             else: return dst_median
         elif hex < src_median: return Utils.round(dst_min + (hex / (src_median - src_min) * (dst_median - dst_min)))
-        else: return Utils.round(dst_median + (hex / (src_max - src_median) * (dst_max - dst_median)))
+        else: return Utils.round(dst_min + (hex / (src_max - src_median) * (dst_max - dst_median)))
 
     @staticmethod
     def _hz_to_buzz(hz):
@@ -941,17 +941,18 @@ class CheeseStickRoboid(Roboid):
         self._packet_received = 0
 
         mode = int(packet[0:1], 16)
+        product_id = int(packet[1:2], 16)
         if mode == 1:       # CheeseStick
             sa_input = int(packet[2:4], 16)
             if self._sa_mode == 0:  # digital
-                self._sa_input_device._put(self._to_hex(sa_input))
+                self._sa_input_device._put(sa_input)
             elif self._sa_mode == 1:  # analog
-                self._sa_input_device._put(self._to_hex(self._calc_io_range(sa_input, 'Sa')))
+                self._sa_input_device._put(self._calc_io_range(sa_input, 'Sa'))
             sb_input = int(packet[4:6], 16)
             if self._sb_mode == 0:  # digital
-                self._sb_input_device._put(self._to_hex(sb_input))
+                self._sb_input_device._put(sb_input)
             elif self._sb_mode == 1:  # analog
-                self._sb_input_device._put(self._to_hex(self._calc_io_range(sb_input, 'Sb')))
+                self._sb_input_device._put(self._calc_io_range(sb_input, 'Sb'))
             sc_input = int(packet[6:8], 16)
             if self._s_pulse_detect:  # pulse detect
                 sc_count = sc_input & 0x7f
@@ -962,20 +963,20 @@ class CheeseStickRoboid(Roboid):
                 self._sc_pulse_input_count_device._put(sc_count)
                 self._sc_pulse_input_state_device._put(sc_state)
             elif self._sc_mode == 0:  # digital
-                self._sc_input_device._put(self._to_hex(sc_input))
+                self._sc_input_device._put(sc_input)
             elif self._sc_mode == 1:  # analog
-                self._sc_input_device._put(self._to_hex(self._calc_io_range(sc_input, 'Sc')))
+                self._sc_input_device._put(self._calc_io_range(sc_input, 'Sc'))
 
             la_input = int(packet[2:4], 16)
             if self._la_mode == 0:  # digital
-                self._la_input_device._put(self._to_hex(la_input))
+                self._la_input_device._put(la_input)
             elif self._la_mode == 1:  # analog
-                self._la_input_device._put(self._to_hex(self._calc_io_range(la_input, 'La')))
+                self._la_input_device._put(self._calc_io_range(la_input, 'La'))
             lb_input = int(packet[4:6], 16)
             if self._lb_mode == 0:  # digital
-                self._lb_input_device._put(self._to_hex(lb_input))
+                self._lb_input_device._put(lb_input)
             elif self._lb_mode == 1:  # analog
-                self._lb_input_device._put(self._to_hex(self._calc_io_range(lb_input, 'Lb')))
+                self._lb_input_device._put(self._calc_io_range(lb_input, 'Lb'))
             lc_input = int(packet[6:8], 16)
             if self._s_pulse_detect:  # pulse detect
                 lc_count = lc_input & 0x7f
@@ -986,9 +987,9 @@ class CheeseStickRoboid(Roboid):
                 self._lc_pulse_input_count_device._put(lc_count)
                 self._lc_pulse_input_state_device._put(lc_state)
             elif self._lc_mode == 0:  # digital
-                self._lc_input_device._put(self._to_hex(lc_input))
+                self._lc_input_device._put(lc_input)
             elif self._lc_mode == 1:  # analog
-                self._lc_input_device._put(self._to_hex(self._calc_io_range(lc_input, 'Lc')))
+                self._lc_input_device._put(self._calc_io_range(lc_input, 'Lc'))
 
             # Acceleration
             acc_x = self._to_int16(int(packet[14:18], 16))
@@ -1042,7 +1043,7 @@ class CheeseStickRoboid(Roboid):
             battery = int(packet[38:40], 16)
             battery = round(2.0 + battery / 100, 2)
             self._battery_device._put(battery)
-        elif mode == 2:     # HAT
+        elif mode == 2 and product_id != 0:     # HAT
             hat = self._hat
             if hat == 10:  # HAT010 5*5 RGB Matrix
                 button_a = int(packet[4:6],16)
@@ -1070,8 +1071,9 @@ class CheeseStickRoboid(Roboid):
                 self._hat022_left_device._put(int(packet[28:30], 16))
                 self._hat022_right_device._put(int(packet[30:32], 16))
                 self._hat022_fn_device._put(int(packet[32:34], 16))
-        elif mode == 3:     # PID
+        elif mode == 3 and product_id != 0:     # PID           
             pid = self._pid
+
             # if pid == 10:   # PID10 Ultrasonic
             #     self._pid10_distance_device._put(int(packet[2:6], 16))
             #     self._pid10_echotime_device._put(int(packet[6:10], 16))
@@ -1262,7 +1264,6 @@ class CheeseStickRoboid(Roboid):
                     result += self._to_hex(min((buzz >> 8) + 2, 0xff))
                     result += self._to_hex(buzz & 0xff)
                 result += "00"  # self._sut
-                print(result)
             elif mode == 2:  # HAT
                 hat = self._hat
                 if hat == 10:  # HAT010 5*5 RGB Matrix

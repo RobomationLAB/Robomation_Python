@@ -385,7 +385,8 @@ class Beagle(Robot):
     def wheel_speed(self, unit: _SensorSide) -> Union[int, float]:
         if unit not in Beagle._VALID_SENSOR_SIDES:
             return _err(Beagle, 'wheel_speed', 'unit', unit, Beagle._VALID_SENSOR_SIDES)
-        return self.read(Beagle.LEFT_WHEEL if unit == 'left' else Beagle.RIGHT_WHEEL)
+        value = self.read(Beagle.LEFT_WHEEL if unit == 'left' else Beagle.RIGHT_WHEEL)
+        return 0 if value == -128 else value
 
     def encoder(self, unit: _SensorSide) -> Union[int, float]:
         if unit not in Beagle._VALID_SENSOR_SIDES:

@@ -79,9 +79,9 @@ def _mpl_color(color):
     return color
 
 
-def scope(name, min_val, max_val, color, signal):
+def scope(signal, name, min_val, max_val, color):
     """신호 한 점을 기록한다(워커 스레드 안전). 실제 그리기는 메인 스레드 _pump() 에서."""
-    _record(name, min_val, max_val, color, signal)
+    _record(signal, name, min_val, max_val, color)
     _ensure_registered()
 
 
@@ -97,7 +97,7 @@ def _ensure_registered():
         _registered = True
 
 
-def _record(name, min_val, max_val, color, signal):
+def _record(signal, name, min_val, max_val, color):
     with _lock:
         scope = _scopes.get(name)
         if scope is None:

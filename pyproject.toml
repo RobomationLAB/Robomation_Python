@@ -49,5 +49,5 @@ Documentation = "https://github.com/RobomationLAB/Robomation_Python/wiki"
 "robomation" = ["py.typed"]
 
 [tool.setuptools_scm]
-fallback_version = "0.1.0"
+fallback_version = "0.1.1"
 local_scheme = "no-local-version"

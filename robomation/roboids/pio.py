@@ -41,7 +41,7 @@ _Clip        = Literal['mute', 'beep', 'beep2', 'beep3', 'beep_repeat', 'beep_ra
                           'fart_a', 'fart_b', 'noise_random', 'noise_random_repeat', 'whistle', 'chop', 'chop_repeat',
                           'random_melody', 'robot', 'connect']
 _Melody      = Literal['mute', 'happy', 'angry', 'sad', 'sleep', 'march', 'birthday', 'dibidibidip', 'good_job',
-                          'robot_poop', 'robot_bath', 'robot_sad', 'robot_happy', 'robot_angry', 'robot_sleep']
+                          'robot_poo', 'robot_bath', 'robot_sad', 'robot_happy', 'robot_angry', 'robot_sleep']
 _KeypadButton = Literal['none', 'play', 'forward', 'backward', 'left', 'right', 'action', 'repeat', 'clear']
 _SensorSide  = Literal['left', 'right']
 # _Code        = Literal['none', 'forward', 'backward', 'left', 'right', 'action', 'repeat']
@@ -532,7 +532,8 @@ class Pio(Robot):
     def wheel_speed(self, unit: _SensorSide) -> Union[int, float]:
         if unit not in Pio._VALID_SENSOR_SIDES:
             return _err(Pio, 'wheel_speed', 'unit', unit, Pio._VALID_SENSOR_SIDES)
-        return self.read(Pio.LEFT_WHEEL if unit == 'left' else Pio.RIGHT_WHEEL)
+        value = self.read(Pio.LEFT_WHEEL if unit == 'left' else Pio.RIGHT_WHEEL)
+        return 0 if value == -128 else value
 
     def signal_strength(self) -> Union[int, float]:
         return self.read(Pio.SIGNAL_STRENGTH)

@@ -35,8 +35,8 @@ _PivotDir        = Literal['forward', 'backward']
 _CircleDir       = Literal['left_forward', 'left_backward', 'right_forward', 'right_backward']
 _TraceLine       = Literal['black', 'red', 'green', 'blue', 'any']
 _UntilLine       = Literal['black', 'red', 'green', 'blue', 'any']
-_UntilColor      = Literal['black', 'red', 'green', 'cyan', 'blue', 'magenta', 'any']
-_IntersectionDir = Literal['forward', 'left', 'right', 'uturn']
+_UntilColor      = Literal['black', 'red', 'yellow', 'green', 'cyan', 'blue', 'magenta', 'any']
+_IntersectionDir = Literal['left', 'right', 'forward', 'uturn']
 _Note            = Literal['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 _Clip            = Literal['mute', 'beep', 'beep2', 'beep3', 'beep_repeat', 'beep_random',
                             'beep2_random', 'beep3_random', 'beep_random_repeat',
@@ -44,8 +44,8 @@ _Clip            = Literal['mute', 'beep', 'beep2', 'beep3', 'beep_repeat', 'bee
                             'robot', 'march', 'birthday', 'dibidibidip', 'good_job']
 _SensorSide      = Literal['left', 'right']
 _Axis            = Literal['x', 'y', 'z']
-_CardColor       = Literal['unknown', 'red', 'yellow', 'green', 'cyan', 'blue', 'magenta', 'white']
-_LEDColor        = Literal['black', 'red', 'yellow', 'green', 'cyan', 'blue', 'magenta', 'white']
+_CardColor       = Literal['unknown', 'red', 'yellow', 'green', 'cyan', 'blue', 'magenta', 'white', 'any']
+_LEDColor        = Literal['black', 'red', 'yellow', 'green', 'cyan', 'blue', 'magenta', 'white', 'any']
 _CardPattern     = Literal['red_yellow', 'red_green', 'red_cyan', 'red_blue', 'red_magenta',
                             'yellow_red', 'yellow_green', 'yellow_cyan', 'yellow_blue', 'yellow_magenta',
                             'green_red', 'green_yellow', 'green_cyan', 'green_blue',
@@ -125,7 +125,7 @@ class Turtle(Robot):
         'siren': 16,              'siren_repeat': 17,
         'engine': 32,             'engine_repeat': 33,       'noise_random': 34,
         'robot': 48,              
-        'march': 64,               'birthday': 65,           'dibidibidip': 66,         'good_job': 67,                   
+        'march': 64,              'birthday': 65,            'dibidibidip': 66,         'good_job': 67,                   
     }
     _VALID_SENSOR_SIDES         = get_args(_SensorSide)
     _VALID_AXIS                 = get_args(_Axis)
@@ -152,10 +152,10 @@ class Turtle(Robot):
 
     # Trace mode wire 값
     _TRACE_LINE_WIRE = {
-        'black': 8,     'red': 9,   'green': 11,    'blue': 13,     'any': 15
+        'black': 8,     'red': 9,       'green': 11,    'blue': 13,     'any': 15
     }
     _TRACE_INTERSECTION_WIRE = {
-        'forward': 16,  'left': 24, 'right': 32,    'uturn': 40
+        'left': 16,     'right': 24,    'forward': 32,  'uturn': 40
     }
     _TRACE_LINE_COLOR_WIRE = {
         ('black', 'red'): 49,   ('black', 'yellow'): 50,    ('black', 'green'): 51,
@@ -568,7 +568,8 @@ class Turtle(Robot):
     def wheel_speed(self, unit: _SensorSide) -> Union[int, float]:
         if unit not in Turtle._VALID_SENSOR_SIDES:
             return _err(Turtle, 'wheel_speed', 'unit', unit, Turtle._VALID_SENSOR_SIDES)
-        return self.read(Turtle.LEFT_WHEEL if unit == 'left' else Turtle.RIGHT_WHEEL)
+        value = self.read(Turtle.LEFT_WHEEL if unit == 'left' else Turtle.RIGHT_WHEEL)
+        return 0 if value == -128 else value
 
     def floor(self) -> Union[int, float]:
         return self.read(Turtle.FLOOR)

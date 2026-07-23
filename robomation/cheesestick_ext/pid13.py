@@ -55,12 +55,18 @@ class PID13:
         return self._parent.read(dev)
 
     def button_input(self, unit: _PID13Button) -> int:
+        if not isinstance(unit, str):
+            _err(PID13, 'button_input', 'unit', unit, 'str')
+        unit = unit.lower()
         if unit not in PID13._VALID_BUTTONS:
             return _err(PID13, 'button_input', 'unit', unit, PID13._VALID_BUTTONS)
         dev = self._parent.PID13_BUTTON_A if unit == 'a' else self._parent.PID13_BUTTON_B
         return self._parent.read(dev)
 
     def button_click(self, unit: _PID13Button) -> bool:
+        if not isinstance(unit, str):
+            _err(PID13, 'button_click', 'unit', unit, 'str')
+        unit = unit.lower()
         if unit not in PID13._VALID_BUTTONS:
             return _err(PID13, 'button_click', 'unit', unit, PID13._VALID_BUTTONS)
         dev = self._parent.PID13_BUTTON_A_STATE if unit == 'a' else self._parent.PID13_BUTTON_B_STATE

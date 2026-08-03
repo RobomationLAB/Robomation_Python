@@ -21,16 +21,16 @@ Scope 표시 규칙:
 - 스코프 창 개수 = 서로 다른 name(label) 개수. 같은 name → 같은 창(세로 스택).
 - 창 안의 선(line) = (min, max, color) 튜플 단위. 같은 튜플이면 같은 선에 누적.
 - 창의 Y축 범위 = [min(모든 line.min), max(모든 line.max)] 로 재조정.
-- X축 = 최근 100 포인트(5초 / 50ms) 슬라이딩 윈도.
+- X축 = 최근 500 포인트 슬라이딩 윈도.
 
 스레딩 모델 (중요):
 - Utils.scope() 는 보통 사용자 loop() = Utils.parallel 워커 스레드에서 호출된다.
   하지만 matplotlib(및 모든 GUI 툴킷) 의 창 생성/갱신은 메인 스레드에서만 안전하다
   (특히 macOS 의 Cocoa 백엔드는 워커 스레드에서 figure 를 만들면 예외).
-    · scope()  → 워커 스레드에서 '데이터 기록만' 한다(GUI 호출 없음).
-    · _pump()  → Runner.register_wait_callback 으로 등록되어, 메인 스레드의
-                 Runner.wait()/wait_forever() 루프가 매 반복 호출한다. 
-                 실제 figure 생성/redraw 는 전부 여기(메인 스레드)에서 일어난다.
+    · scope()  → 데이터를 기록하고 _pump() 를 호출한다.
+    · _pump()  → Runner.register_wait_callback 으로도 등록되어, 메인 스레드의
+                 Runner.wait()/wait_forever() 루프가 매 반복 호출한다.
+                 워커 스레드에서 불리면 건너뛰므로, 실제 figure 생성/redraw 는 전부 메인 스레드에서만 일어난다.
 - matplotlib 가 없거나 GUI 백엔드를 못 열면 콘솔 출력('name: signal')으로 폴백한다.
 """
 
@@ -41,9 +41,9 @@ from robomation.core.runner import Runner
 
 # X축에 한 번에 보여줄 포인트 수(= 창 폭). scope() 호출마다 점이 1개 쌓이므로,
 # 값이 클수록 파형이 화면을 가로지르는 데 오래 걸린다(= 더 느리게 흐름).
-# 예: loop 가 10ms 주기면 300 포인트 ≈ 3초 창. 더 느리게 하려면 키우고, 빠르게 하려면 줄인다.
-_MAX_POINTS = 300
-_DRAW_INTERVAL = 0.05  # 50ms (화면 갱신 주기. 작을수록 부드럽지만 CPU 더 씀)
+_MAX_POINTS = 500
+_MIN_DRAW_INTERVAL = 0.01  # 10ms (redraw 최소 간격. 작을수록 부드럽지만 CPU 더 씀)
+_FALLBACK_PRINT_INTERVAL = 0.05  # 50ms (콘솔 폴백 출력 throttle)
 
 # name -> {'order': [key...], 'lines': {key: {'min','max','color','signals':[...]}}}
 # key = (min, max, color)
@@ -55,6 +55,7 @@ _lock = threading.Lock()
 
 _registered = False
 _last_draw = 0.0
+_dirty = False
 
 # matplotlib lazy 초기화 상태 (전부 메인 스레드에서만 건드린다)
 _mpl_ready = None      # None=미시도, True=사용가능, False=폴백
@@ -80,9 +81,10 @@ def _mpl_color(color):
 
 
 def scope(signal, name, min_val, max_val, color):
-    """신호 한 점을 기록한다(워커 스레드 안전). 실제 그리기는 메인 스레드 _pump() 에서."""
+    """신호 한 점을 기록하고 화면을 갱신한다(워커 스레드 안전)."""
     _record(signal, name, min_val, max_val, color)
     _ensure_registered()
+    _pump()
 
 
 def _ensure_registered():
@@ -98,7 +100,9 @@ def _ensure_registered():
 
 
 def _record(signal, name, min_val, max_val, color):
+    global _dirty
     with _lock:
+        _dirty = True
         scope = _scopes.get(name)
         if scope is None:
             scope = {'order': [], 'lines': {}}
@@ -122,15 +126,18 @@ def _record(signal, name, min_val, max_val, color):
 
 
 def _pump():
-    """메인 스레드(Runner.wait 루프)에서만 GUI 를 그린다. 워커 스레드에서 불리면 건너뜀."""
+    """메인 스레드에서만 GUI 를 그린다. 워커 스레드에서 불리면 건너뜀."""
     if threading.current_thread() is not threading.main_thread():
         return
 
-    global _last_draw
+    global _last_draw, _dirty
+    if not _dirty:
+        return
     now = time.monotonic()
-    if (now - _last_draw) < _DRAW_INTERVAL:
+    if (now - _last_draw) < _MIN_DRAW_INTERVAL:
         return
     _last_draw = now
+    _dirty = False
 
     if _ensure_mpl():
         try:
@@ -265,7 +272,7 @@ def _fallback_print():
         if not lines:
             continue
         last = _fallback_last.get(name, 0.0)
-        if now - last >= _DRAW_INTERVAL:
+        if now - last >= _FALLBACK_PRINT_INTERVAL:
             _fallback_last[name] = now
             signal = lines[-1][4][-1] if lines[-1][4] else None
             print(f"[scope:{name}] {signal}")

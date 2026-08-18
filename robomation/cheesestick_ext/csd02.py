@@ -66,8 +66,16 @@ class CSD02:
         self._parent.write(self._parent.LB_OUTPUT_PWM, self._parent._analog_to_pwm(g))
         self._parent.write(self._parent.LC_OUTPUT_PWM, self._parent._analog_to_pwm(b))
 
-    def set_color(self, r: Union[_CSD02Color, int, float], g: Union[int, None] = None, b: Union[int, None] = None):
-        if isinstance(r, str):
+    def set_color(self, r: Union[_CSD02Color, int, float, list, tuple], g: Union[int, None] = None, b: Union[int, None] = None):
+        # 색을 list 또는 tuple 로 넘긴 경우, r g b 로 펼친다. (r의 길이가 3이 아니거나 g/b 가 함께 오면 오류)
+        if isinstance(r, (list, tuple)):
+            if len(r) != 3:
+                return _err(CSD02, 'set_color', 'r', r, 'list | tuple, length: 3')
+            elif g is not None or b is not None:
+                return _err(CSD02, 'set_color', 'r, g, b', (r, g, b), 'g and b should be None')
+            rgb = r
+        elif isinstance(r, str):
+
             if r not in CSD02._VALID_COLORS:
                 return _err(CSD02, 'set_color', 'color', r, tuple(CSD02._VALID_COLORS))
             rgb = CSD02._VALID_COLORS[r]

@@ -634,10 +634,17 @@ class HamsterS(Robot):
 
     # ── LED ───────────────────────────────────────────────────────────────────
 
-    def set_led_color(self, unit: _LedUnit, r: Union[_Color, int, float], g: Union[int, None] = None, b: Union[int, None] = None):
+    def set_led_color(self, unit: _LedUnit, r: Union[_Color, int, float, list, tuple], g: Union[int, None] = None, b: Union[int, None] = None):
         if unit not in HamsterS._VALID_LED_UNITS:
             return _err(HamsterS, 'set_led_color', 'unit', unit, HamsterS._VALID_LED_UNITS)
-        if isinstance(r, str):
+        # 색을 list 또는 tuple 로 넘긴 경우, r g b 로 펼친다. (r의 길이가 3이 아니거나 g/b 가 함께 오면 오류)
+        if isinstance(r, (list, tuple)):
+            if len(r) != 3:
+                return _err(HamsterS, 'set_led_color', 'r', r, 'list | tuple, length: 3')
+            elif g is not None or b is not None:
+                return _err(HamsterS, 'set_led_color', 'r, g, b', (r, g, b), 'g and b should be None')
+            rgb = r
+        elif isinstance(r, str):
             if r not in HamsterS._VALID_COLORS:
                 return _err(HamsterS, 'set_led_color', 'color', r, tuple(HamsterS._VALID_COLORS))
             rgb = HamsterS._VALID_COLORS[r]

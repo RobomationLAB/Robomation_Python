@@ -431,10 +431,17 @@ class Pio(Robot):
         return self.read(Pio.NECK_MOVING)
 
     # ── Eye LED ───────────────────────────────────────────────────────────────
-    def set_eye_color(self, unit: _EyeUnit, r: Union[_EyeColor, int, float], g: Union[int, None] = None, b: Union[int, None] = None):
+    def set_eye_color(self, unit: _EyeUnit, r: Union[_EyeColor, int, float, list, tuple], g: Union[int, None] = None, b: Union[int, None] = None):
         if unit not in Pio._VALID_EYE_UNITS:
             return _err(Pio, 'set_eye_color', 'unit', unit, Pio._VALID_EYE_UNITS)
-        if isinstance(r, str):
+        # 색을 list 또는 tuple 로 넘긴 경우, r g b 로 펼친다. (r의 길이가 3이 아니거나 g/b 가 함께 오면 오류)
+        if isinstance(r, (list, tuple)):
+            if len(r) != 3:
+                return _err(Pio, 'set_eye_color', 'r', r, 'list | tuple, length: 3')
+            elif g is not None or b is not None:
+                return _err(Pio, 'set_eye_color', 'r, g, b', (r, g, b), 'g and b should be None')
+            rgb = r
+        elif isinstance(r, str):
             if r not in Pio._VALID_COLORS:
                 return _err(Pio, 'set_eye_color', 'color', r, tuple(Pio._VALID_COLORS))
             rgb = Pio._VALID_COLORS[r]

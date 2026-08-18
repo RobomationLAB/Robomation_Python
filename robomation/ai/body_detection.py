@@ -164,7 +164,9 @@ class BodyDetection(Robot):
         return self.read(dev_id) if dev_id is not None else 0
 
     @staticmethod
-    def _resolve_part(name):
+    def _resolve_part(name, param='unit'):
+        if name not in BodyDetection._PARTS:
+            return _err(BodyDetection, 'get_distance', param, name, tuple(BodyDetection._PARTS))
         return BodyDetection._PARTS.get(name)
 
     # ── Public API ───────────────────────────────────────────────────────────
@@ -270,8 +272,8 @@ class BodyDetection(Robot):
     def get_distance(self, unit1: _PartName, unit2: _PartName, type: _DistType = None) -> float:
         if type is not None and type not in BodyDetection._VALID_DISTANCE_TYPE:
             return _err(BodyDetection, 'get_distance', 'type', type, BodyDetection._VALID_DISTANCE_TYPE)
-        p1 = BodyDetection._resolve_part(unit1)
-        p2 = BodyDetection._resolve_part(unit2)
+        p1 = BodyDetection._resolve_part(unit1, 'unit1')
+        p2 = BodyDetection._resolve_part(unit2, 'unit2')
         dx = self._read_seg(p2, 'x') - self._read_seg(p1, 'x')
         dy = self._read_seg(p2, 'y') - self._read_seg(p1, 'y')
         if type is None:

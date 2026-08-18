@@ -92,8 +92,15 @@ class NeoPixel:
         self._parent.write(self._parent.NEO_BLUE, b)
         time.sleep(0.1)  
 
-    # 색 인자가 이름 문자열이면 RGB로 변환, 숫자면 그대로 검증해 반환.
+    # 색 인자가 이름 문자열이거나 list/tuple 이면 RGB로 변환, 숫자면 그대로 검증해 반환.
     def _resolve_color(self, method, r, g, b):
+        # 색을 list 또는 tuple 로 넘긴 경우 그대로 rgb 로. (r의 길이가 3이 아니거나 g/b 가 함께 오면 오류)
+        if isinstance(r, (list, tuple)):
+            if len(r) != 3:
+                return _err(NeoPixel, method, 'r', r, 'list | tuple, length: 3')
+            elif g is not None or b is not None:
+                return _err(NeoPixel, method, 'r, g, b', (r, g, b), 'g and b should be None')
+            return list(r)
         if isinstance(r, str):
             if r not in NeoPixel._VALID_COLORS:
                 _err(NeoPixel, method, 'color', r, tuple(NeoPixel._VALID_COLORS))
@@ -139,7 +146,7 @@ class NeoPixel:
             self._parent.read(self._parent.NEO_BLUE) + b
         )
 
-    def set_one_color(self, idx: int, r: Union[_NeoPixelColor, int, float], g: int | None = None, b: int | None = None):
+    def set_one_color(self, idx: int, r: Union[_NeoPixelColor, int, float, list, tuple], g: int | None = None, b: int | None = None):
         rgb = self._resolve_color('set_one_color', r, g, b)
         Runner.dispatch(lambda: self._fill_color_impl(idx, idx, rgb), True)
 
@@ -162,7 +169,7 @@ class NeoPixel:
             return _err(NeoPixel, 'set_range_pattern', 'pattern', pattern, NeoPixel._VALID_PATTERNS)
         Runner.dispatch(lambda: self._set_range_pattern_impl(from_idx, to_idx, pattern), True)
 
-    def set_range_color(self, from_idx: int, to_idx: int, r: Union[_NeoPixelColor, int, float], g: int | None = None, b: int | None = None):
+    def set_range_color(self, from_idx: int, to_idx: int, r: Union[_NeoPixelColor, int, float, list, tuple], g: int | None = None, b: int | None = None):
         rgb = self._resolve_color('set_range_color', r, g, b)
         Runner.dispatch(lambda: self._fill_color_impl(from_idx, to_idx, rgb), True)
 
@@ -173,7 +180,7 @@ class NeoPixel:
         Runner.dispatch(lambda: self._fill_color_impl(from_idx, to_idx, [0, 0, 0]), True)
 
     # ── Range increment ──────────────────────────────────────────────────────
-    def set_range_increment_color(self, from_idx: int, to_idx: int, increment: int, r: Union[_NeoPixelColor, int, float], g: int | None = None, b: int | None = None):
+    def set_range_increment_color(self, from_idx: int, to_idx: int, increment: int, r: Union[_NeoPixelColor, int, float, list, tuple], g: int | None = None, b: int | None = None):
         rgb = self._resolve_color('set_range_increment_color', r, g, b)
         Runner.dispatch(lambda: self._fill_increment_color_impl(from_idx, to_idx, increment, rgb), True)
 

@@ -20,8 +20,6 @@
 import math
 import time
 
-import cv2
-
 from robomation.core.error import _err
 from robomation.core.runner import Runner
 from robomation.core.model import Robot
@@ -177,7 +175,9 @@ class DetailedFaceDetection(Robot):
         return self.read(DetailedFaceDetection._COORD_DEVICE[DetailedFaceDetection._PARTS[part] + '.' + pos])
 
     @staticmethod
-    def _resolve_part(name):
+    def _resolve_part(name, param='unit'):
+        if name not in DetailedFaceDetection._PARTS:
+            return _err(DetailedFaceDetection, 'get_distance', param, name, tuple(DetailedFaceDetection._PARTS))
         return DetailedFaceDetection._PARTS.get(name)
 
     # ── Public API ───────────────────────────────────────────────────────────
@@ -251,8 +251,8 @@ class DetailedFaceDetection(Robot):
     def get_distance(self, unit1: _PartName, unit2: _PartName, type: _DistType = None) -> float:
         if type is not None and type not in DetailedFaceDetection._VALID_DISTANCE_TYPE:
             return _err(DetailedFaceDetection, 'get_distance', 'type', type, DetailedFaceDetection._VALID_DISTANCE_TYPE)
-        p1 = DetailedFaceDetection._resolve_part(unit1)
-        p2 = DetailedFaceDetection._resolve_part(unit2)
+        p1 = DetailedFaceDetection._resolve_part(unit1, 'unit1')
+        p2 = DetailedFaceDetection._resolve_part(unit2, 'unit2')
         dx = self.read(DetailedFaceDetection._COORD_DEVICE[p2 + '.x']) - self.read(DetailedFaceDetection._COORD_DEVICE[p1 + '.x'])
         dy = self.read(DetailedFaceDetection._COORD_DEVICE[p2 + '.y']) - self.read(DetailedFaceDetection._COORD_DEVICE[p1 + '.y'])
         if type is None:

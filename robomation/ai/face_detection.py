@@ -154,7 +154,9 @@ class FaceDetection(Robot):
         return self.read(FaceDetection._COORD_DEVICE[FaceDetection._PARTS[part] + '.' + pos])
 
     @staticmethod
-    def _resolve_part(name):
+    def _resolve_part(name, param='unit'):
+        if name not in FaceDetection._PARTS:
+            return _err(FaceDetection, 'get_distance', param, name, tuple(FaceDetection._PARTS))
         return FaceDetection._PARTS.get(name)
 
     # ── Public API ───────────────────────────────────────────────────────────
@@ -214,8 +216,8 @@ class FaceDetection(Robot):
     def get_distance(self, unit1: _PartName, unit2: _PartName, type: _DistType = None) -> float:
         if type is not None and type not in FaceDetection._VALID_DISTANCE_TYPE:
             return _err(FaceDetection, 'get_distance', 'type', type, FaceDetection._VALID_DISTANCE_TYPE)
-        p1 = FaceDetection._resolve_part(unit1)
-        p2 = FaceDetection._resolve_part(unit2)
+        p1 = FaceDetection._resolve_part(unit1, 'unit1')
+        p2 = FaceDetection._resolve_part(unit2, 'unit2')
         dx = self.read(FaceDetection._COORD_DEVICE[p2 + '.x']) - self.read(FaceDetection._COORD_DEVICE[p1 + '.x'])
         dy = self.read(FaceDetection._COORD_DEVICE[p2 + '.y']) - self.read(FaceDetection._COORD_DEVICE[p1 + '.y'])
         if type is None:

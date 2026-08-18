@@ -46,9 +46,9 @@ class PioRoboid(Roboid):
 
         # ── Motoring 상태 (effector: 매 사이클 read / command: _is_written latch) ──
         self._turbo = 0
-        self._left_wheel = 0
-        self._right_wheel = 0
-        self._neck_speed = 0
+        self._left_wheel = -128
+        self._right_wheel = -128
+        self._neck_speed = 4
         self._left_rgb = [0, 0, 0]
         self._left_color = 0
         self._left_brightness = 100
@@ -209,9 +209,9 @@ class PioRoboid(Roboid):
 
         # ── Motoring 상태 (effector: 매 사이클 read / command: _is_written latch) ──
         self._turbo = 0
-        self._left_wheel = 0
-        self._right_wheel = 0
-        self._neck_speed = 0
+        self._left_wheel = -128
+        self._right_wheel = -128
+        self._neck_speed = 4
         self._left_rgb = [0, 0, 0]
         self._left_color = 0
         self._left_brightness = 100

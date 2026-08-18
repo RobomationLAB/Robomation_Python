@@ -46,8 +46,8 @@ class TurtleRoboid(Roboid):
         self._thread_lock = threading.Lock()
 
         # ── Motoring 상태 (effector: 매 사이클 read / command: _is_written latch) ──
-        self._left_wheel = 0
-        self._right_wheel = 0
+        self._left_wheel = -128
+        self._right_wheel = -128
         self._line_tracer_speed = 0
         self._line_tracer_gain = 0
         self._head_led = [0, 0, 0]
@@ -181,8 +181,8 @@ class TurtleRoboid(Roboid):
         super(TurtleRoboid, self)._reset()
 
         # ── Motoring 상태 (effector: 매 사이클 read / command: _is_written latch) ──
-        self._left_wheel = 0
-        self._right_wheel = 0
+        self._left_wheel = -128
+        self._right_wheel = -128
         self._line_tracer_speed = 0
         self._line_tracer_gain = 0
         self._head_led = [0, 0, 0]

@@ -48,8 +48,8 @@ class BeagleRoboid(Roboid):
         # ── Motoring 상태 (effector: 매 사이클 read / command: _is_written latch) ──
         self._motor_sleep = 0
         self._motor_acceleration = 5
-        self._left_wheel = 0
-        self._right_wheel = 0
+        self._left_wheel = -128
+        self._right_wheel = -128
         self._sound_buzz = 0
 
         self._servo_a_speed = 5
@@ -101,7 +101,7 @@ class BeagleRoboid(Roboid):
     def _create_model(self):
         dict = self._device_dict = {}
         dict[Beagle.MOTOR_SLEEP] = self._motor_sleep_device = self._add_device(Beagle.MOTOR_SLEEP, "MotorSleep", DeviceType.EFFECTOR, DataType.INTEGER, 1, 0, 1, 0)
-        dict[Beagle.MOTOR_ACCELERATION] = self._motor_acceleration_device = self._add_device(Beagle.MOTOR_ACCELERATION, "MotorAcceleration", DeviceType.EFFECTOR, DataType.INTEGER, 1, 0, 15, 5)
+        dict[Beagle.MOTOR_ACCELERATION] = self._motor_acceleration_device = self._add_device(Beagle.MOTOR_ACCELERATION, "MotorAcceleration", DeviceType.EFFECTOR, DataType.INTEGER, 1, 1, 15, 5)
         dict[Beagle.LEFT_WHEEL] = self._left_wheel_device = self._add_device(Beagle.LEFT_WHEEL, "LeftWheel", DeviceType.EFFECTOR, DataType.INTEGER, 1, -128, 127, -128)
         dict[Beagle.RIGHT_WHEEL] = self._right_wheel_device = self._add_device(Beagle.RIGHT_WHEEL, "RightWheel", DeviceType.EFFECTOR, DataType.INTEGER, 1, -128, 127, -128)
         dict[Beagle.SOUND_BUZZ] = self._sound_buzz_device = self._add_device(Beagle.SOUND_BUZZ, "SoundBuzz", DeviceType.EFFECTOR, DataType.FLOAT, 1, 0, 6553.5, 0)
@@ -132,8 +132,8 @@ class BeagleRoboid(Roboid):
         dict[Beagle.TIMESTAMP] = self._timestamp_device = self._add_device(Beagle.TIMESTAMP, "Timestamp", DeviceType.SENSOR, DataType.INTEGER, 1, 0, 65535, 0)
         dict[Beagle.WHEEL_COUNT] = self._wheel_count_device = self._add_device(Beagle.WHEEL_COUNT, "WheelCount", DeviceType.SENSOR, DataType.INTEGER, 1, 0, 65535, 0)
         dict[Beagle.SOUND_PLAYING] = self._sound_playing_device = self._add_device(Beagle.SOUND_PLAYING, "SoundPlaying", DeviceType.SENSOR, DataType.INTEGER, 1, 0, 1, 0)
-        dict[Beagle.LEFT_ENCODER] = self._left_encoder_device = self._add_device(Beagle.LEFT_ENCODER, "LeftEncoder", DeviceType.SENSOR, DataType.INTEGER, 1, -214783648, 214783647, 0)
-        dict[Beagle.RIGHT_ENCODER] = self._right_encoder_device = self._add_device(Beagle.RIGHT_ENCODER, "RightEncoder", DeviceType.SENSOR, DataType.INTEGER, 1, -214783648, 214783647, 0)
+        dict[Beagle.LEFT_ENCODER] = self._left_encoder_device = self._add_device(Beagle.LEFT_ENCODER, "LeftEncoder", DeviceType.SENSOR, DataType.INTEGER, 1, -2147483648, 2147483647, 0)
+        dict[Beagle.RIGHT_ENCODER] = self._right_encoder_device = self._add_device(Beagle.RIGHT_ENCODER, "RightEncoder", DeviceType.SENSOR, DataType.INTEGER, 1, -2147483648, 2147483647, 0)
 
         dict[Beagle.GYROSCOPE_INDEX] = self._gyroscope_index_device = self._add_device(Beagle.GYROSCOPE_INDEX, "GyroscopeIndex", DeviceType.SENSOR, DataType.INTEGER, 1, 0, 15, 0)
         dict[Beagle.GYROSCOPE_X] = self._gyroscope_x_device = self._add_device(Beagle.GYROSCOPE_X, "GyroscopeX", DeviceType.SENSOR, DataType.FLOAT, 1, -250.0, 250.0, 0)
@@ -220,8 +220,8 @@ class BeagleRoboid(Roboid):
         # ── Motoring 상태 (effector: 매 사이클 read / command: _is_written latch) ──
         self._motor_sleep = 0
         self._motor_acceleration = 5
-        self._left_wheel = 0
-        self._right_wheel = 0
+        self._left_wheel = -128
+        self._right_wheel = -128
         self._sound_buzz = 0
 
         self._servo_a_speed = 5
@@ -367,7 +367,7 @@ class BeagleRoboid(Roboid):
             self._temperature_device._put(temperature)
 
             # signal strength
-            signal_strength = packet[14]
+            signal_strength = self._to_int8(packet[14])
             self._signal_strength_device._put(signal_strength)
 
             # battery
@@ -510,7 +510,7 @@ class BeagleRoboid(Roboid):
             if packet[2] != 0xfe or packet[3] != 0x10: return False
 
             cur_lidar_index = self._lidar_index_device.read()
-            new_lidar_index = (packet[4] & 0xff)
+            new_lidar_index = packet[4] & 0xff
             if cur_lidar_index == new_lidar_index: return False
 
             lidar_ready = (packet[5] & 0x01) ^ 0x01

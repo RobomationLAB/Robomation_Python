@@ -24,6 +24,7 @@ from typing import Literal, Union, get_args
 from robomation.core.error import _err
 from robomation.core.runner import Runner
 from robomation.core.model import Robot
+from robomation.core.serial_connector import parse_connect_args
 
 
 # ── Module-level Literal aliases (for IDE auto-complete) ─────────────────────
@@ -131,10 +132,8 @@ class Pio(Robot):
     # _VALID_CODES   = {c: i for i, c in enumerate(get_args(_Code))}
 
     # ── Robot lifecycle ───────────────────────────────────────────────────────
-    def __init__(self, index=0, port_name=None):
-        if isinstance(index, str):
-            port_name = index
-            index = 0
+    def __init__(self, index=0, port_name=None, address=None):
+        index, port_name, address = parse_connect_args(index, port_name, address)
         if index in Pio._robots:
             robot = Pio._robots[index]
             if robot: robot.dispose()
@@ -145,7 +144,7 @@ class Pio(Robot):
         self._saved_wheel = None
         self._wrote_wheel = None
 
-        self._init(port_name)
+        self._init(port_name, address)
 
     def dispose(self):
         Pio._robots[self.get_index()] = None
@@ -155,13 +154,13 @@ class Pio(Robot):
     def reset(self):
         self._roboid._reset()
 
-    def _init(self, port_name):
+    def _init(self, port_name, address=None):
         from robomation.roboids.pio_roboid import PioRoboid
         self._roboid = PioRoboid(self.get_index())
         self._add_roboid(self._roboid)
         Runner.register_robot(self)
         Runner.start()
-        self._roboid._init(port_name)
+        self._roboid._init(port_name, address)
 
     def find_device_by_id(self, device_id):
         return self._roboid.find_device_by_id(device_id)

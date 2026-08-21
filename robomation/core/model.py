@@ -256,6 +256,15 @@ class Roboid(NamedElement):
         self._motoring_devices = []
         self._disposed = False
 
+        # ── 통신 수명주기 공통 상태 (Runner.connect_roboid / _run / _release 가 공유) ──
+        self._connector = None
+        self._thread = None
+        self._running = False
+        self._releasing = 0
+        self._release_deadline = 0
+        self._ready = False
+        self._checked = False       # Runner.register_checked() 1회 보장 플래그
+
     def _is_disposed(self):
         return self._disposed
 

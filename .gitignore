@@ -4,37 +4,82 @@ venv/
 .venv/
 env/
 ENV/
+env.bak/
+venv.bak/
 
 # 빌드 및 배포 결과물
 build/
 dist/
+sdist/
+wheels/
 *.egg-info/
+.eggs/
+*.egg
+MANIFEST
 
-# 캐시 파일
+# 캐시 및 컴파일 결과
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
 
 # --- 테스트 및 Coverage ---
+test/
+tests/
+
 htmlcov/
 .tox/
+.nox/
 .coverage
 .coverage.*
 .cache
+.pytest_cache/
+.hypothesis/
 nosetests.xml
 coverage.xml
 *.cover
-.hypothesis/
+
+# --- 타입 검사 / 린터 캐시 ---
+.mypy_cache/
+.dmypy.json
+.pyre/
+.pytype/
+.ruff_cache/
 
 # --- IDE 설정 (VS Code, PyCharm 등) ---
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
+
+# --- OS 생성 파일 ---
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# --- Dropbox (충돌 사본) ---
+.dropbox
+.dropbox.attr
+.dropbox.cache/
+*.sb-*
+*conflicted copy*
+*충돌된 사본*
 
 # --- 기타 ---
-.DS_Store
 .env
-.pytest_cache/
+.ipynb_checkpoints/
+*.orig
+*.rej
 
 .claude/
 .playwright-mcp/

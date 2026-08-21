@@ -21,8 +21,9 @@
 
 import time
 import threading
+from timeit import default_timer as timer
 
-from robomation.core.runner import Runner
+from robomation.core.runner import Runner, RELEASE_TIMEOUT
 from robomation.core.model import DeviceType, DataType, Roboid
 from robomation.core.utils import Utils
 from robomation.core.serial_connector import SerialConnector, Result
@@ -119,47 +120,47 @@ class HamsterRoboid(Roboid):
         return self._device_dict.get(device_id)
 
     def _run(self):
-        try:
-            while self._running or self._releasing > 0:
+        error_count = 0
+        while self._running or self._releasing > 0:
+            try:
                 if self._receive(self._connector):
                     self._send(self._connector)
                     if self._releasing > 0:
                         self._releasing -= 1
-                time.sleep(0.01)
-        except Exception:                  
-            import traceback
-            traceback.print_exc()
-            # pass
+            except Exception:
+                # 패킷 한 건의 해석 오류로 통신 스레드가 죽으면 안 된다.
+                # (죽으면 _ready 가 영원히 False 로 남아 연결 대기가 끝나지 않는다)
+                error_count += 1
+                if error_count == 1:  # 같은 오류가 반복돼도 최초 1회만 출력한다
+                    Runner._print_roboid_error(self, "Sensory packet error (ignored, keep running)")
+                    import traceback
+                    traceback.print_exc()
+            if self._releasing > 0 and timer() > self._release_deadline:
+                self._releasing = 0  # 로봇이 응답하지 않아도 릴리즈 단계를 끝낸다
+            time.sleep(0.01)
 
-    def _init(self, port_name=None):
-        Runner.register_required()
-        self._running = True
-        self._releasing = 0
-        thread = threading.Thread(target=self._run)
-        self._thread = thread
-        thread.daemon = True
-        thread.start()
-
+    def _init(self, port_name=None, address=None):
         tag = "Hamster[{}]".format(self._index)
-        self._connector = SerialConnector(tag, HamsterConnectionChecker(self))
-        result = self._connector.open(port_name)
-        if result == Result.FOUND:
-            while self._ready == False and self._is_disposed() == False:
-                time.sleep(0.01)
-        elif result == Result.NOT_AVAILABLE:
-            Runner.register_checked()
+        connector = SerialConnector(tag, HamsterConnectionChecker(self), address=address)
+        Runner.connect_roboid(self, connector, port_name)
 
     def _release(self):
         if self._ready:
             self._releasing = 5
+            self._release_deadline = timer() + RELEASE_TIMEOUT
         self._running = False
         thread = self._thread
         self._thread = None
         if thread:
-            thread.join()
+            thread.join(RELEASE_TIMEOUT + 0.5)
+            if thread.is_alive():
+                self._releasing = 0  # 루프 조건을 풀어 스레드가 스스로 빠져나가게
+                thread.join(0.2)
 
+        # 스레드가 남아 있어도 포트는 반드시 반납한다.
         connector = self._connector
         self._connector = None
+        self._ready = False
         if connector:
             connector.close()
 
@@ -359,7 +360,7 @@ class HamsterRoboid(Roboid):
                     if self._decode_sensory_packet(packet):
                         if self._ready == False:
                             self._ready = True
-                            Runner.register_checked()
+                            Runner._register_checked(self)
                         self._notify_sensory_device_data_changed()
                 return True
         return False

@@ -19,9 +19,16 @@
 # Free Software Foundation, Inc., 59 Temple Place, Suite 330,
 # Boston, MA  02111-1307  USA
 
+import sys
 import threading
 import time
 from timeit import default_timer as timer
+
+# 핸드셰이크(FOUND) 성공 후 첫 센서 패킷을 기다리는 한계 시간.
+# 정상 로봇은 20ms 주기로 패킷을 보내므로 이보다 오래 걸리면 응답 불능으로 본다.
+READY_TIMEOUT = 3.0
+# _release() 에서 종료 패킷을 전송할 수 있게 주는 유예 시간.
+RELEASE_TIMEOUT = 1.0
 
 
 class Evaluation(object):
@@ -154,6 +161,11 @@ class Runner(object):
         Runner._components = []
         for component in components:
             component.dispose()
+        Runner._added = []
+        Runner._removed = []
+        # 남아 있는 카운터를 초기화해야 다음 연결의 wait_until_ready() 가 정상 동작한다.
+        Runner._required = 0
+        Runner._checked = 0
 
     @staticmethod
     def shutdown():
@@ -163,7 +175,9 @@ class Runner(object):
         thread = Runner._thread
         Runner._thread = None
         if thread:
-            thread.join()
+            thread.join(RELEASE_TIMEOUT)
+        # 같은 프로세스에서 다시 start() 할 수 있도록 플래그를 내린다.
+        Runner._start_flag = False
 
     @staticmethod
     def register_robot(robot):
@@ -190,6 +204,66 @@ class Runner(object):
     @staticmethod
     def register_checked():
         Runner._checked += 1
+
+    @staticmethod
+    def _register_checked(roboid):
+        # roboid 당 정확히 1회만 세야 required/checked 균형이 유지된다.
+        # (연결 성공/실패/타임아웃 중 어느 경로로 끝나도 1회)
+        if roboid._checked == False:
+            roboid._checked = True
+            Runner.register_checked()
+
+    @staticmethod
+    def _print_roboid_error(roboid, message):
+        try:
+            tag = "{}[{}]".format(roboid.get_name(), getattr(roboid, "_index", 0))
+        except:
+            tag = "Roboid"
+        sys.stderr.write("{} {}\n".format(tag, message))
+
+    @staticmethod
+    def connect_roboid(roboid, connector, port_name=None):
+        # roboid 의 통신 스레드를 띄우고 연결이 확립될 때까지(또는 실패가 확정될 때까지) 기다린다.
+        # 어떤 경우에도 유한 시간에 반환하며, 연결에 실패하면 COM 포트를 반납한다.
+        from robomation.core.serial_connector import Result
+
+        Runner.register_required()
+        roboid._checked = False
+        roboid._ready = False
+        roboid._running = True
+        roboid._releasing = 0
+        roboid._release_deadline = 0
+        roboid._connector = connector
+
+        thread = threading.Thread(target=roboid._run)
+        thread.daemon = True
+        roboid._thread = thread
+        thread.start()
+
+        result = connector.open(port_name)
+        if result != Result.NOT_AVAILABLE:
+            # 핸드셰이크는 통과했다. 첫 센서 패킷이 해석될 때까지만 기다린다.
+            # 통신 스레드가 죽었거나 시간이 초과되면 즉시 빠져나온다.
+            # NOT_CONNECTED 도 이 경로를 타므로, 이 사이에 브리지가 로봇을 붙이면 그대로 연결된다.
+            deadline = timer() + READY_TIMEOUT
+            while (roboid._ready == False and roboid._is_disposed() == False
+                   and thread.is_alive() and timer() < deadline):
+                time.sleep(0.01)
+
+        if roboid._ready == False:
+            if roboid._is_disposed() == False:
+                if thread.is_alive() == False:
+                    Runner._print_roboid_error(roboid, "Communication stopped by packet error")
+                elif result == Result.NOT_CONNECTED:
+                    Runner._print_roboid_error(roboid, "No robot connected to the USB to BLE bridge")
+                elif result != Result.NOT_AVAILABLE:
+                    Runner._print_roboid_error(roboid, "No response from robot")
+            # 실패가 확정됐으므로 통신 스레드를 정리하고 COM 포트를 반납한다.
+            # (반납하지 않으면 같은 프로세스에서 재시도해도 그 포트를 다시 열 수 없다.)
+            roboid._release()
+
+        Runner._register_checked(roboid)
+        return result
 
     @staticmethod
     def set_executable(execute):
@@ -236,11 +310,19 @@ class Runner(object):
 
     @staticmethod
     def wait_until(condition, arg=None):
+        # 조건이 로봇의 바운드 메서드면(모든 완료 대기가 그렇다), 그 로봇이 한 번도
+        # 연결되지 않았을 때는 완료 신호가 올 수 없으므로 기다리지 않는다.
+        # 연결됐다가 통신이 끊긴 경우는 _ready 가 유지되므로 기존대로 계속 기다린다.
+        roboid = getattr(getattr(condition, "__self__", None), "_roboid", None)
+
         evaluation = Evaluation(condition)
         evaluation._set_arg(arg)
         Runner._evaluator._add(evaluation)
         Runner.start()
         while evaluation._result == False:
+            if roboid is not None and roboid._ready == False:
+                evaluation._cancel()  # 평가 목록에 남지 않도록 완료로 표시
+                break
             time.sleep(0.01)
 
     @staticmethod

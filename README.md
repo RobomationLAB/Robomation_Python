@@ -98,6 +98,45 @@ hamster_s = HamsterS()
 hamster_s.set_wheel_speed('both', 30)   
 ```
 
+#### 인스턴스 선언
+
+```python
+hamster_s = HamsterS()                                 # 자동 탐색
+hamster_s = HamsterS(0)                                # 인스턴스 번호
+hamster_s = HamsterS("COM3")                           # 포트 이름
+hamster_s = HamsterS("D9:4B:8B:A4:E1:67")              # 제품 고유 주소
+hamster_s = HamsterS(0, port_name="COM3")              # 번호 + 포트
+hamster_s = HamsterS(0, address="D9:4B:8B:A4:E1:67")   # 번호 + 주소
+hamster_s = HamsterS(0, "COM3", "D94B8BA4E167")        # 번호 + 포트 + 주소
+```
+
+| 이름 | 구분 | 설명 | 범위 / 종류 | 기본값 |
+| --- | --- | --- | --- | --- |
+| index | 입력값 | 인스턴스 번호 (0부터 시작) | 0 이상 정수 | 0 |
+| port_name | 입력값 | 연결할 포트 이름. 해당 포트만 사용. | 문자열 (`COM3`, `/dev/cu.usbmodem1101` 등) | None (자동 탐색) |
+| address | 입력값 | 연결할 로봇의 제품 고유 주소. 주소가 일치하는 로봇만 연결. | 문자열 (16진수 12자리, `:` 는 생략 가능) | None (기종만 확인) |
+
+제품 고유 주소는 로봇이 연결될 때 출력되는 메시지에서 확인할 수 있습니다.
+제품 라벨에 인쇄된 주소와 같습니다.
+
+```
+HamsterS[0] Connected: COM3 D9:4B:8B:A4:E1:67
+                            └── 이 값을 그대로 입력합니다
+```
+
+로봇을 2대 이상 사용할 때는 **인스턴스 번호를 서로 다르게 지정해야 합니다.**
+
+```python
+hamster_s1 = HamsterS(0, address="D9:4B:8B:A4:E1:67")
+hamster_s2 = HamsterS(1, address="AA:BB:CC:DD:EE:FF")
+```
+
+제품 고유 주소를 지정하지 않으면 어느 인스턴스가 어느 로봇에 연결될지 실행할 때마다
+달라질 수 있습니다. 여러 대의 로봇을 사용할 때는 주소를 지정하는 것을 권장합니다.
+
+지정한 주소의 로봇이 없으면 **다른 로봇에 연결되지 않고** 그 인스턴스만 연결에 실패하며,
+연결에 성공한 다른 로봇들은 정상적으로 동작합니다.
+
 ### AI 확장 모듈 — 얼굴 인식
 
 ```python
